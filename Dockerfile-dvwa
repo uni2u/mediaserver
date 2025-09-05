@@ -1,0 +1,86 @@
+FROM ubuntu:22.04
+
+# 타임존 설정
+ENV TZ=Asia/Seoul
+# 환경 변수 설정 (기본값: 파일 감시 비활성화)
+ENV ENABLE_WATCH=false
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 필요한 패키지 설치
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx \
+    ffmpeg \
+    inotify-tools \
+    curl \
+    apache2 \
+    libapache2-mod-php \
+    php-mysql \
+    php-gd \
+    mariadb-server \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# 작업 디렉토리 설정
+WORKDIR /opt/mediaserver
+
+# 서버 구조 생성
+RUN mkdir -p /opt/mediaserver/hls \
+    /opt/mediaserver/logs \
+    /opt/mediaserver/media \
+    /opt/mediaserver/www \
+    /opt/mediaserver/temp \
+    && chown -R www-data:www-data /opt/mediaserver/hls \
+    /opt/mediaserver/logs \
+    /opt/mediaserver/temp \
+    && chmod 755 /opt/mediaserver \
+    && chmod -R 755 /opt/mediaserver/media \
+    && chmod -R 775 /opt/mediaserver/hls \
+    && chmod -R 775 /opt/mediaserver/logs \
+    && chmod -R 775 /opt/mediaserver/temp
+
+# DVWA 설치 및 구성
+RUN git clone https://github.com/digininja/DVWA.git /var/www/html/dvwa \
+    && cd /var/www/html/dvwa \
+    && cp config/config.inc.php.dist config/config.inc.php \
+    && sed -i 's/p@ssw0rd/password/g' config/config.inc.php \
+    && sed -i "s/'PHPIDS_ENABLED', 'enabled'/'PHPIDS_ENABLED', 'disabled'/g" config/config.inc.php \
+    && sed -i "s/'default_security_level', 'impossible'/'default_security_level', 'low'/g" config/config.inc.php \
+    && chown -R www-data:www-data /var/www/html/dvwa
+
+# Apache 설정 (DVWA용)
+COPY apache-dvwa.conf /etc/apache2/sites-available/dvwa.conf
+RUN echo "Listen 8080" > /etc/apache2/ports.conf \
+    && a2enmod rewrite \
+    && a2dissite 000-default \
+    && a2ensite dvwa \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# media 영상 파일 복사
+COPY media/*.mp4 /opt/mediaserver/media/
+
+# 스크립트 파일 복사
+COPY generate_hls.sh watch_media.sh /opt/mediaserver/
+COPY playlist.txt_container /opt/mediaserver/playlist.txt
+COPY www/index.html /opt/mediaserver/www/
+
+# nginx 설정
+COPY mediaserver /etc/nginx/sites-available/
+RUN ln -sf /etc/nginx/sites-available/mediaserver /etc/nginx/sites-enabled/ \
+    && rm -f /etc/nginx/sites-enabled/default
+
+# 실행 권한 부여
+RUN sed -i 's/\r$//' /opt/mediaserver/*.sh \
+    && chmod +x /opt/mediaserver/generate_hls.sh /opt/mediaserver/watch_media.sh
+
+# 테스트를 위한 경로 연결 (선택적) - 취약점 테스트 용이성 향상
+RUN ln -sf /opt/mediaserver /var/www/html/media
+
+# 포트 설정
+EXPOSE 3333 8080
+
+# 시작 스크립트
+COPY docker-entrypoint-combined.sh /
+RUN chmod +x /docker-entrypoint-combined.sh
+ENTRYPOINT ["/docker-entrypoint-combined.sh"]

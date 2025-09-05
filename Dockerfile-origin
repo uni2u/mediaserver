@@ -1,0 +1,68 @@
+FROM ubuntu:22.04
+
+# 타임존 설정
+ENV TZ=Asia/Seoul
+# 환경 변수 설정 (기본값: 파일 감시 비활성화)
+ENV ENABLE_WATCH=false
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# 필요한 패키지 설치
+RUN apt-get update && apt-get install -y \
+    nginx \
+    ffmpeg \
+    inotify-tools \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# 작업 디렉토리 설정
+WORKDIR /opt/mediaserver
+
+# 서버 구조 생성
+RUN mkdir -p /opt/mediaserver/hls \
+    /opt/mediaserver/logs \
+    /opt/mediaserver/media \
+    /opt/mediaserver/www \
+    /opt/mediaserver/temp \
+    && chown -R www-data:www-data /opt/mediaserver/hls \
+    /opt/mediaserver/logs \
+    /opt/mediaserver/temp \
+    && chmod 755 /opt/mediaserver \
+    && chmod -R 755 /opt/mediaserver/media \
+    && chmod -R 775 /opt/mediaserver/hls \
+    && chmod -R 775 /opt/mediaserver/logs \
+    && chmod -R 775 /opt/mediaserver/temp
+
+# media 영상 파일 복사
+COPY media/*.mp4 /opt/mediaserver/media/
+
+# 스크립트 파일 복사
+COPY generate_hls.sh watch_media.sh /opt/mediaserver/
+COPY playlist.txt_container /opt/mediaserver/playlist.txt
+COPY www/index.html /opt/mediaserver/www/
+
+# nginx 설정
+COPY mediaserver /etc/nginx/sites-available/
+RUN ln -sf /etc/nginx/sites-available/mediaserver /etc/nginx/sites-enabled/ \
+    && rm -f /etc/nginx/sites-enabled/default
+
+# 실행 권한 부여
+RUN chmod +x /opt/mediaserver/generate_hls.sh /opt/mediaserver/watch_media.sh
+
+# 권한 설정 - www-data가 필요한 디렉토리에 쓰기 권한 가지도록 설정
+#RUN chown -R www-data:www-data /opt/mediaserver/hls \
+#    /opt/mediaserver/logs \
+#    /opt/mediaserver/temp \
+#    && chmod 755 /opt/mediaserver \
+#    && chmod -R 755 /opt/mediaserver/media \
+#    && chmod -R 775 /opt/mediaserver/hls \
+#    && chmod -R 775 /opt/mediaserver/logs \
+#    && chmod -R 775 /opt/mediaserver/temp
+
+# 포트 설정
+EXPOSE 3333
+
+# 시작 스크립트
+COPY docker-entrypoint.sh /
+RUN chmod +x /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]

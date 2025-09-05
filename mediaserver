@@ -1,0 +1,53 @@
+server {
+    listen 3333;
+    server_name localhost;
+
+    # 로그 설정
+    access_log /opt/mediaserver/logs/nginx_access.log;
+    error_log /opt/mediaserver/logs/nginx_error.log;
+
+    # 메인 웹 인터페이스
+    location / {
+        root /opt/mediaserver/www;
+        index index.html;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+
+    # HLS 스트리밍 경로 - 캐싱 비활성화
+    location /hls/ {
+        alias /opt/mediaserver/hls/;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+        add_header Access-Control-Allow-Origin "*";
+        
+        # 적절한 MIME 타입 설정
+        types {
+            application/vnd.apple.mpegurl m3u8;
+            video/mp2t ts;
+        }
+        
+        # 세그먼트 파일에 대해 sendfile 최적화 사용
+        sendfile on;
+        tcp_nopush on;
+        
+        # 세그먼트 요청에 대한 장시간 연결 방지
+        keepalive_timeout 65;
+        
+        # 대용량 전송을 위한 버퍼 설정
+        client_max_body_size 10m;
+        client_body_buffer_size 128k;
+        proxy_buffer_size 4k;
+        proxy_buffers 4 32k;
+        proxy_busy_buffers_size 64k;
+    }
+
+    # 미디어 파일 직접 접근 경로
+    location /media/ {
+        alias /opt/mediaserver/media/;
+        add_header Cache-Control "no-cache";
+        add_header Access-Control-Allow-Origin "*";
+    }
+}

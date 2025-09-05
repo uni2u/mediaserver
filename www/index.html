@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>미디어 스트리밍 서비스</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.4.12"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    #video-container { max-width: 800px; margin: 0 auto; }
+    video { width: 100%; }
+    .controls { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; }
+    button { padding: 10px; margin: 5px 10px 5px 0; cursor: pointer; }
+    #status { 
+      margin: 10px 0; 
+      padding: 8px; 
+      background-color: #f0f0f0; 
+      border-radius: 4px;
+      min-height: 20px;
+    }
+    #error-display {
+      color: red;
+      margin-top: 10px;
+      display: none;
+    }
+    h1 { text-align: center; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <div id="video-container">
+    <h1>미디어 스트리밍 서비스</h1>
+    <video id="video" controls></video>
+    <div class="controls">
+      <button onclick="refreshPlayer()">플레이어 새로고침</button>
+      <button onclick="forcePlay()">강제 재생</button>
+      <button onclick="restartStream()">처음부터 재생</button>
+    </div>
+    <div id="status">초기화 중...</div>
+    <div id="error-display"></div>
+  </div>
+
+  <script>
+    let hls = null;
+    const videoElement = document.getElementById('video');
+    const statusElement = document.getElementById('status');
+    const errorElement = document.getElementById('error-display');
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      loadPlayer();
+    });
+    
+    function showError(message) {
+      errorElement.textContent = message;
+      errorElement.style.display = 'block';
+      console.error(message);
+    }
+    
+    function clearError() {
+      errorElement.textContent = '';
+      errorElement.style.display = 'none';
+    }
+    
+    function loadPlayer() {
+      statusElement.textContent = "플레이어 초기화 중...";
+      clearError();
+      
+      // 이전 인스턴스 정리
+      if (hls) {
+        hls.destroy();
+        hls = null;
+      }
+      
+      if (Hls.isSupported()) {
+        // 캐시 방지를 위한 타임스탬프 추가
+        const videoSrc = '/hls/playlist.m3u8?_=' + new Date().getTime();
+        
+        hls = new Hls({
+          debug: true,                    // 디버깅 활성화
+          enableWorker: true,
+          lowLatencyMode: false,          // 저지연 모드 비활성화
+          fragLoadingTimeOut: 60000,      // 타임아웃 증가
+          manifestLoadingTimeOut: 60000,
+          startLevel: 0,                  // 항상 첫 번째 품질 레벨에서 시작
+          startPosition: -1,              // 플레이리스트의 시작부터 재생
+          abrEwmaDefaultEstimate: 500000, // 네트워크 대역폭 추정치 조정
+          maxBufferLength: 30,            // 버퍼 길이 증가
+          maxMaxBufferLength: 60,
+          backBufferLength: 30,
+          manifestLoadingMaxRetry: 4,     // 재시도 횟수 증가
+          levelLoadingMaxRetry: 4,
+          fragLoadingMaxRetry: 4,
+          xhrSetup: function(xhr) {
+            xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            xhr.setRequestHeader('Pragma', 'no-cache');
+            xhr.setRequestHeader('Expires', '0');
+          }
+        });
+        
+        // 미디어 요소에 HLS 연결
+        hls.attachMedia(videoElement);
+        
+        // 이벤트 리스너 등록
+        hls.on(Hls.Events.MEDIA_ATTACHED, function() {
+          statusElement.textContent = "미디어 연결됨, 소스 로드 중...";
+          hls.loadSource(videoSrc);
+        });
+        
+        hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+          statusElement.textContent = `매니페스트 파싱 완료. ${data.levels.length}개 품질 레벨 발견. 재생 시작 중...`;
+          
+          // 약간의 지연 후 재생 시도 (더 안정적인 재생을 위해)
+          setTimeout(() => {
+            videoElement.play().catch(e => {
+              statusElement.textContent = "자동 재생 실패: " + e.message + " - 화면을 클릭하거나 강제 재생 버튼을 사용하세요";
+            });
+          }, 1000);
+        });
+        
+        hls.on(Hls.Events.FRAG_CHANGED, function(event, data) {
+          // 현재 재생 중인 세그먼트 정보 업데이트
+          const segmentInfo = data.frag;
+          if (segmentInfo) {
+            statusElement.textContent = `재생 중: 세그먼트 ${segmentInfo.sn}`;
+          }
+        });
+        
+        // 오류 처리 리스너
+        hls.on(Hls.Events.ERROR, function(event, data) {
+          console.error('HLS 오류:', data);
+          
+          if (data.fatal) {
+            switch(data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                statusElement.textContent = "네트워크 오류, 복구 시도 중...";
+                showError(`네트워크 오류: ${data.details}`);
+                hls.startLoad();
+                break;
+                
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                statusElement.textContent = "미디어 오류, 복구 시도 중...";
+                showError(`미디어 오류: ${data.details}`);
+                hls.recoverMediaError();
+                break;
+                
+              default:
+                statusElement.textContent = "치명적인 오류, 플레이어 재시작 필요";
+                showError(`치명적 오류: ${data.type} - ${data.details}`);
+                break;
+            }
+          } else {
+            // 비치명적 오류
+            showError(`비치명적 오류: ${data.details}`);
+          }
+        });
+        
+        // 전역 변수로 저장
+        window.hls = hls;
+        
+      } else if (videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+        // iOS Safari와 같은 네이티브 HLS 지원 브라우저
+        const videoSrc = '/hls/playlist.m3u8?_=' + new Date().getTime();
+        videoElement.src = videoSrc;
+        
+        videoElement.addEventListener('loadedmetadata', function() {
+          statusElement.textContent = "네이티브 HLS 지원으로 재생 중";
+          videoElement.play().catch(e => {
+            statusElement.textContent = "자동 재생 실패: " + e.message;
+          });
+        });
+        
+      } else {
+        showError("이 브라우저는 HLS를 지원하지 않습니다");
+        statusElement.textContent = "HLS가 지원되지 않는 브라우저입니다";
+      }
+    }
+    
+    // 플레이어 새로고침
+    function refreshPlayer() {
+      statusElement.textContent = "플레이어 새로고침 중...";
+      loadPlayer();
+    }
+    
+    // 강제 재생
+    function forcePlay() {
+      statusElement.textContent = "강제 재생 시도 중...";
+      
+      if (!window.hls) {
+        loadPlayer();
+        setTimeout(forcePlay, 1000); // 플레이어 로드 후 다시 시도
+        return;
+      }
+      
+      videoElement.play()
+        .then(() => {
+          statusElement.textContent = "재생 중";
+          clearError();
+        })
+        .catch(e => {
+          statusElement.textContent = "재생 실패: " + e.message;
+          showError("재생 실패: " + e.message + " - 화면을 클릭해보세요");
+        });
+    }
+    
+    // 스트림 처음부터 재생
+    function restartStream() {
+      if (window.hls) {
+        statusElement.textContent = "처음부터 재생 중...";
+        
+        // 현재 재생 위치를 0으로 설정
+        videoElement.currentTime = 0;
+        
+        videoElement.play()
+          .then(() => {
+            statusElement.textContent = "처음부터 재생 중";
+            clearError();
+          })
+          .catch(e => {
+            statusElement.textContent = "재생 실패: " + e.message;
+            showError("재생 실패: " + e.message);
+          });
+      } else {
+        loadPlayer();
+      }
+    }
+    
+    // 비디오 이벤트 리스너
+    videoElement.addEventListener('playing', function() {
+      statusElement.textContent = "재생 중";
+      clearError();
+    });
+    
+    videoElement.addEventListener('waiting', function() {
+      statusElement.textContent = "버퍼링 중...";
+    });
+    
+    videoElement.addEventListener('error', function() {
+      if (videoElement.error) {
+        const errorMessage = `비디오 오류: ${videoElement.error.code}`;
+        statusElement.textContent = errorMessage;
+        showError(errorMessage);
+      }
+    });
+    
+    videoElement.addEventListener('ended', function() {
+      statusElement.textContent = "재생 완료";
+    });
+    
+    videoElement.addEventListener('pause', function() {
+      statusElement.textContent = "일시 정지됨";
+    });
+    
+    // 자동 재생 정책 우회를 위한 사용자 상호작용 감지
+    document.addEventListener('click', function() {
+      if (videoElement.paused) {
+        videoElement.play().catch(e => {
+          console.log("클릭 후 재생 시도 실패:", e);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
