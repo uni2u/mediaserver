@@ -1,16 +1,20 @@
-`wget https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4 -O bunny1.mp4`
-`wget https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_2mb.mp4 -O bunny2.mp4`
-`wget https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_5mb.mp4 -O bunny5.mp4`
-`wget https://download.samplelib.com/mp4/sample-10s.mp4 -O sample10.mp4`
-`wget http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4 -O sample11.mp4`
-`wget https://videos.pexels.com/video-files/5243087/5243087-hd_1920_1080_25fps.mp4 -O mil00.mp4`
-`wget https://videos.pexels.com/video-files/6091718/6091718-uhd_2560_1440_25fps.mp4 -O mil01.mp4`
-`wget https://videos.pexels.com/video-files/5243140/5243140-hd_1920_1080_25fps.mp4 -O mil02.mp4`
-`wget https://videos.pexels.com/video-files/6091716/6091716-uhd_2560_1440_25fps.mp4 -O mil03.mp4`
-`wget https://videos.pexels.com/video-files/6090861/6090861-uhd_2560_1440_25fps.mp4 -O mil04.mp4`
-`wget https://videos.pexels.com/video-files/5243143/5243143-hd_1920_1080_25fps.mp4 -O mil05.mp4`
-`wget https://videos.pexels.com/video-files/29684331/12767104_1920_1080_60fps.mp4 -O mil06.mp4`
-`wget https://videos.pexels.com/video-files/13721791/13721791-hd_1920_1080_60fps.mp4 -O mil07.mp4`
-`wget https://videos.pexels.com/video-files/30284840/12981889_2560_1440_60fps.mp4 -O mil08.mp4`
-`wget https://videos.pexels.com/video-files/6092113/6092113-uhd_2560_1440_25fps.mp4 -O mil09.mp4`
-`wget https://videos.pexels.com/video-files/6091132/6091132-uhd_2560_1440_25fps.mp4 -O mil10.mp4`
+# media source
+- `wget https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4 -O bunny1.mp4`
+- `wget https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_2mb.mp4 -O bunny2.mp4`
+- `wget https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_5mb.mp4 -O bunny5.mp4`
+- `wget https://download.samplelib.com/mp4/sample-10s.mp4 -O sample10.mp4`
+- `wget http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4 -O sample11.mp4`
+- `wget https://videos.pexels.com/video-files/5243087/5243087-hd_1920_1080_25fps.mp4 -O mil00.mp4`
+- `wget https://videos.pexels.com/video-files/6091718/6091718-uhd_2560_1440_25fps.mp4 -O mil01.mp4`
+- `wget https://videos.pexels.com/video-files/5243140/5243140-hd_1920_1080_25fps.mp4 -O mil02.mp4`
+- `wget https://videos.pexels.com/video-files/6091716/6091716-uhd_2560_1440_25fps.mp4 -O mil03.mp4`
+- `wget https://videos.pexels.com/video-files/6090861/6090861-uhd_2560_1440_25fps.mp4 -O mil04.mp4`
+- `wget https://videos.pexels.com/video-files/5243143/5243143-hd_1920_1080_25fps.mp4 -O mil05.mp4`
+- `wget https://videos.pexels.com/video-files/29684331/12767104_1920_1080_60fps.mp4 -O mil06.mp4`
+- `wget https://videos.pexels.com/video-files/13721791/13721791-hd_1920_1080_60fps.mp4 -O mil07.mp4`
+- `wget https://videos.pexels.com/video-files/30284840/12981889_2560_1440_60fps.mp4 -O mil08.mp4`
+- `wget https://videos.pexels.com/video-files/6092113/6092113-uhd_2560_1440_25fps.mp4 -O mil09.mp4`
+- `wget https://videos.pexels.com/video-files/6091132/6091132-uhd_2560_1440_25fps.mp4 -O mil10.mp4`
+
+# cdn
+- `curl -L -o /opt/mediaserver/www/hls.min.js https://cdn.jsdelivr.net/npm/hls.js@1.4.12/dist/hls.min.js`
