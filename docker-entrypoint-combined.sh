@@ -9,7 +9,7 @@ APP_DIR=/opt/mediaserver
 # --- 권한/디렉토리 ---
 mkdir -p "$LOG_DIR" "$HLS_DIR" "$TMP_DIR" "$APP_DIR/media"
 chown -R www-data:www-data "$HLS_DIR" "$LOG_DIR" "$TMP_DIR"
-chmod -R 777 "$HLS_DIR" "$LOG_DIR" "$TMP_DIR"
+chmod -R 777 "$HLS_DIR" "$LOG_DIR" "$TMP_DIR" "$APP_DIR/media"
 
 # 로그 파일 사전 생성 + 소유권
 touch "$LOG_DIR/ffmpeg.log" "$LOG_DIR/hls.log" "$LOG_DIR/watch.log" "$LOG_DIR/nginx_access.log" "$LOG_DIR/nginx_error.log"
