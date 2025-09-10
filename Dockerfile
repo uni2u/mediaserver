@@ -34,11 +34,11 @@ RUN mkdir -p /opt/mediaserver/hls \
     && chown -R www-data:www-data /opt/mediaserver/hls \
     /opt/mediaserver/logs \
     /opt/mediaserver/temp \
-    && chmod 755 /opt/mediaserver \
-    && chmod -R 755 /opt/mediaserver/media \
-    && chmod -R 775 /opt/mediaserver/hls \
-    && chmod -R 775 /opt/mediaserver/logs \
-    && chmod -R 775 /opt/mediaserver/temp
+    && chmod 777 /opt/mediaserver \
+    && chmod -R 777 /opt/mediaserver/media \
+    && chmod -R 777 /opt/mediaserver/hls \
+    && chmod -R 777 /opt/mediaserver/logs \
+    && chmod -R 777 /opt/mediaserver/temp
 
 # DVWA 설치 및 구성
 RUN git clone https://github.com/digininja/DVWA.git /var/www/html/dvwa \
