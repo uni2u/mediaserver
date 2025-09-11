@@ -23,8 +23,6 @@ echo "mediaserver 컨테이너를 실행합니다."
 docker run -d \
     --name mediaserver \
     -p 3333:3333 \
-    -v $(pwd)/media:/opt/mediaserver/media:ro \
-    -v $(pwd)/hls:/opt/mediaserver/hls \
     -v $(pwd)/logs:/opt/mediaserver/logs \
     -e ENABLE_WATCH=false \
     --restart unless-stopped \
