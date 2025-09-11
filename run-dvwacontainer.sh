@@ -25,8 +25,6 @@ docker run -d \
     --init \
     -p 3333:3333 \
     -p 8080:8080 \
-    -v $(pwd)/media:/opt/mediaserver/media:z \
-    -v $(pwd)/hls:/opt/mediaserver/hls \
     -v $(pwd)/logs:/opt/mediaserver/logs \
     -e ENABLE_WATCH=true \
     --restart unless-stopped \
